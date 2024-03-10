@@ -1,3 +1,5 @@
-<app-gif-list [gifs]="redditService.gifs$()">
-
-</app-gif-list>
+<app-gif-list [gifs]="redditService.gifs()"
+              infiniteScroll
+              (scrolled)="redditService.pagination$.next(redditService.lastKnownGif())"
+              class="grid-container"
+></app-gif-list>
