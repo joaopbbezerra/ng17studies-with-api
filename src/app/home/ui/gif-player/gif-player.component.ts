@@ -1,8 +1,9 @@
 import {Component, computed, effect, ElementRef, Input, signal, ViewChild} from '@angular/core';
-import {combineLatest, EMPTY, filter, fromEvent, Subject, switchMap} from "rxjs";
-import {takeUntilDestroyed, toObservable} from "@angular/core/rxjs-interop";
+import {combineLatest, EMPTY, filter, fromEvent, map, merge, Subject, switchMap} from "rxjs";
+import {toObservable} from "@angular/core/rxjs-interop";
 import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
 import {NgStyle} from "@angular/common";
+import {connect} from "ngxtension/connect";
 
 export interface GifPlayerState {
   playing: boolean;
@@ -61,26 +62,19 @@ export class GifPlayerComponent {
 
   constructor(){
     //Reducers
-    this.videoLoadStart$.pipe(
-      takeUntilDestroyed()
-    ).subscribe(() => this.state.update(state => ({
-      ...state,
-      status: 'loading',
-    })));
-
-    this.videoLoadComplete$.pipe(
-      takeUntilDestroyed()
-    ).subscribe(() => this.state.update(state => ({
-      ...state,
-      status: 'loaded'
-    })));
-
-    this.togglePlay$.pipe(
-      takeUntilDestroyed()
-    ).subscribe(() => this.state.update(state => ({
-      ...state,
-      playing: !state.playing
-    })));
+    const nextState$ = merge(
+      this.videoLoadStart$.pipe(map(() => ({
+        status: 'loading' as const,
+      }))),
+      this.videoLoadComplete$.pipe(map(() => ({
+        status: 'loaded' as const
+      }))),
+    )
+    connect(this.state)
+      .with(nextState$)
+      .with(this.togglePlay$, (state) => ({
+        playing: !state.playing
+      }))
 
     //Effects
     effect(() => {
